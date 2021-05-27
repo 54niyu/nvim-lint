@@ -24,13 +24,14 @@ return {
       return {}
     end
 
-    local diagnostics = {}
+    local group_diagnostics = {}
     for _, item in ipairs(decoded["Issues"]) do
       local sv = vim.lsp.protocol.DiagnosticSeverity.Warning
       if severities[item.Severity] ~= nil then
         sv = severities[item.Severity]
       end
-      table.insert(diagnostics, {
+      local fl = 'file://' .. vim.fn.getcwd() .. '/' .. item.Pos.Filename
+      local diag = {
         range = {
           ['start'] = {
             line = item.Pos.Line - 1,
@@ -40,11 +41,17 @@ return {
             line = item.Pos.Line - 1,
             character = item.Pos.Column - 1,
           },
+          ['filename'] = item.Pos.Filename,
         },
         severity = sv,
         message = item.Text,
-      })
+        source = "golangci-lint",
+     }
+
+      if group_diagnostics[fl] == nil then group_diagnostics[fl] = {} end
+      table.insert(group_diagnostics[fl], diag)
     end
-    return diagnostics
+
+    return {multiple = true, diagnostics = group_diagnostics}
   end
 }

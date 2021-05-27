@@ -39,14 +39,27 @@ end
 local function mk_publish_diagnostics(bufnr, client_id)
   local method = 'textDocument/publishDiagnostics'
   return vim.schedule_wrap(function(diagnostics)
-    local result = {
-      uri = vim.uri_from_bufnr(bufnr),
-      diagnostics = assert(
-        diagnostics,
-        'Linter parser is supposed to return a list of diagnostics, got: ' .. vim.inspect(diagnostics)
-      ),
-    }
-    vim.lsp.handlers[method](nil, method, result, client_id, bufnr)
+     if diagnostics.multiple == true then
+       for key, value in pairs(diagnostics.diagnostics) do
+          local result = {
+            uri = key,
+            diagnostics = assert(
+              value,
+              'Linter parser is supposed to return a list of diagnostics, got: ' .. vim.inspect(diagnostics)
+            ),
+          }
+          vim.lsp.handlers[method](nil, method, result, client_id, vim.uri_to_bufnr(key))
+       end
+     else
+       local result = {
+          uri = vim.uri_from_bufnr(bufnr),
+          diagnostics = assert(
+            diagnostics,
+            'Linter parser is supposed to return a list of diagnostics, got: ' .. vim.inspect(diagnostics)
+          ),
+        }
+        vim.lsp.handlers[method](nil, method, result, client_id, bufnr)
+     end
   end)
 end
 
